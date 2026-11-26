@@ -8,6 +8,13 @@ FLIR 공식 앱이나 FLIR SDK 없이, USB 프로토콜을 **순수 Java**로 �
 FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카메라를 안드로이드폰에 꽂아도 5초마다 재부팅만 반복합니다.
 이 앱은 iAP2 의 호스트(아이폰) 역할을 대신 수행해서 영상을 받아 옵니다.
 
+<p align="center">
+  <img src="docs/images/screenshot-msx.jpg" width="320"
+       alt="FLIR ONE Viewer 실행 화면: 윤곽선(MSX) 모드로 손과 얼굴을 비춘 열화상, 스팟 36.1°C">
+  <br>
+  <sub>윤곽선(MSX) 모드 실행 화면 — 아이폰용 FLIR ONE + Galaxy SM-S938N</sub>
+</p>
+
 > English summary: An unofficial, open-source Android viewer for FLIR ONE thermal cameras, written in plain Java
 > without the FLIR SDK. It also works with the **iPhone (Lightning) FLIR ONE** on Android: the app implements
 > the Apple iAP2 host handshake that the camera expects, then streams thermal + visual frames over USB.
