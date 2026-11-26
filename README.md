@@ -8,12 +8,22 @@ FLIR 공식 앱이나 FLIR SDK 없이, USB 프로토콜을 **순수 Java**로 �
 FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카메라를 안드로이드폰에 꽂아도 5초마다 재부팅만 반복합니다.
 이 앱은 iAP2 의 호스트(아이폰) 역할을 대신 수행해서 영상을 받아 옵니다.
 
-<p align="center">
-  <img src="docs/images/screenshot-msx.jpg" width="320"
-       alt="FLIR ONE Viewer 실행 화면: 윤곽선(MSX) 모드로 손과 얼굴을 비춘 열화상, 스팟 36.1°C">
-  <br>
-  <sub>윤곽선(MSX) 모드 실행 화면 — 아이폰용 FLIR ONE + Galaxy SM-S938N</sub>
-</p>
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="docs/images/screenshot-connect.jpg" width="260"
+           alt="카메라 연결 전 안내 화면: FLIR ONE 카메라를 연결하세요">
+    </td>
+    <td align="center">
+      <img src="docs/images/screenshot-msx.jpg" width="260"
+           alt="윤곽선(MSX) 모드로 손과 얼굴을 비춘 열화상, 스팟 36.1°C">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub>연결 전 안내 화면</sub></td>
+    <td align="center"><sub>윤곽선(MSX) 모드 실행 화면</sub></td>
+  </tr>
+</table>
 
 > English summary: An unofficial, open-source Android viewer for FLIR ONE thermal cameras, written in plain Java
 > without the FLIR SDK. It also works with the **iPhone (Lightning) FLIR ONE** on Android: the app implements
@@ -57,6 +67,13 @@ FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카�
 
 아이폰용 FLIR ONE 은 **Lightning(8핀) 암 → USB-C 수 변환 젠더**로 안드로이드폰에 연결합니다.
 아래 알리익스프레스 상품으로 동작을 확인했습니다.
+
+<p align="center">
+  <img src="docs/images/hardware-lightning-usbc.jpg" width="420"
+       alt="아이폰용 FLIR ONE(Lightning 단자)과 Lightning → USB-C 변환 젠더">
+  <br>
+  <sub>아이폰용 FLIR ONE(왼쪽)과 Lightning → USB-C 변환 젠더(오른쪽)</sub>
+</p>
 
 - 👉 [알리익스프레스 Lightning → USB-C 변환 젠더](https://ko.aliexpress.com/item/1005008035704308.html)
 
