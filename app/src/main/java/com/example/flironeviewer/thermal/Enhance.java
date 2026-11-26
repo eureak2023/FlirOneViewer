@@ -102,12 +102,24 @@ public final class Enhance {
         return out;
     }
 
-    /** MSX 윤곽 더하기: out += strength · (Y − boxBlur(Y)). */
+    /** 윤곽 이득(강도 100% 기준)과 소프트 클리핑 한계(휘도 단계). */
+    static final float EDGE_GAIN = 2.5f, EDGE_MAX = 120f;
+
+    /**
+     * MSX 윤곽 더하기.
+     * <pre>
+     *   d = (Y − boxBlur(Y, r)) · strength · EDGE_GAIN    (Y 는 이미 필터링 축소된 실화상이라 별도 노이즈 제거 불필요)
+     *   e = EDGE_MAX · tanh(d / EDGE_MAX)                                (약한 윤곽은 키우고 강한 윤곽은 포화 방지)
+     *   out = clamp(color + e)
+     * </pre>
+     */
     public static void addEdges(int[] argb, float[] luma, int w, int h, float strength, int r) {
         if (strength <= 0) return;
-        float[] blur = box(luma, w, h, r);
+        float[] coarse = box(luma, w, h, r);
+        float g = strength * EDGE_GAIN;
         for (int i = 0; i < argb.length; i++) {
-            int e = (int) ((luma[i] - blur[i]) * strength);
+            float d = (luma[i] - coarse[i]) * g;
+            int e = Math.round(EDGE_MAX * (float) Math.tanh(d / EDGE_MAX));
             int c = argb[i];
             argb[i] = 0xFF000000 | clamp(((c >> 16) & 0xFF) + e) << 16 | clamp(((c >> 8) & 0xFF) + e) << 8 | clamp((c & 0xFF) + e);
         }

@@ -226,12 +226,28 @@ public final class ThermalView extends View {
     }
 
     /** 세로 화면에서 자동으로 더할 회전각(센서 영상은 가로 방향). */
+    /** 기본 세로 화면(ROTATION_0)에서 영상이 바로 서는 회전각 (실기기 확인). */
     private static final int PORTRAIT_AUTO_ROTATION = 270;
 
-    /** 실제 적용 회전각 = 사용자 회전 + (세로 화면이면 270°, 실기기 확인). */
+    /** 렌즈가 화면 쪽(셀카 방향)을 보도록 꽂혀 있는지. 화면 회전 보정 방향이 반대가 됩니다. */
+    private boolean lensFacingScreen;
+
+    public boolean isLensFacingScreen() { return lensFacingScreen; }
+    public void setLensFacingScreen(boolean v) { lensFacingScreen = v; invalidate(); }
+
+    /**
+     * 실제 적용 회전각. 카메라는 폰에 고정되어 있으므로 화면이 돌아간 만큼 반대로 보정합니다.
+     * <pre>
+     *   effective = 사용자 회전 + 270° − s · 화면회전각     (s = +1 뒷면 렌즈, −1 화면 쪽 렌즈)
+     * </pre>
+     * 180°(거꾸로 세로)는 렌즈 방향과 관계없이 90° 가 됩니다.
+     */
     public int getEffectiveRotation() {
-        int auto = getHeight() > getWidth() ? PORTRAIT_AUTO_ROTATION : 0;
-        return (rotation + auto) % 360;
+        int displayDeg = 0;
+        android.view.Display d = getDisplay();
+        if (d != null) displayDeg = d.getRotation() * 90;
+        int s = lensFacingScreen ? -1 : 1;
+        return (((rotation + PORTRAIT_AUTO_ROTATION - s * displayDeg) % 360) + 360) % 360;
     }
 
     private void buildMatrix(int w, int h) {

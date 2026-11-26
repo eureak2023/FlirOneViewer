@@ -106,12 +106,15 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         btnLock = findViewById(R.id.btnLock);
         btnPalette = findViewById(R.id.btnPalette);
 
+        ((android.hardware.display.DisplayManager) getSystemService(Context.DISPLAY_SERVICE))
+                .registerDisplayListener(displayListener, ui);
         loadSavedCalibration();
         {
             android.content.SharedPreferences p = getSharedPreferences("viewer", MODE_PRIVATE);
             renderer.setMsxStrength(p.getFloat("msxStrength", 1.0f));
             renderer.setDenoise(p.getBoolean("denoise", true));
             renderer.setEnhance(p.getBoolean("enhance", true));
+            thermalView.setLensFacingScreen(p.getBoolean("lensFacingScreen", false));
             renderer.getFusion().distanceM = p.getFloat("fusionDistance", 3f);
         }
         thermalView.setConverter(converter);
@@ -188,8 +191,18 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         if (camera == null) findAndConnect();
     }
 
+    /** 세로 ↔ 거꾸로 세로(180°)는 화면 크기가 같아 구성 변경 이벤트가 오지 않으므로 디스플레이 회전을 직접 감지합니다. */
+    private final android.hardware.display.DisplayManager.DisplayListener displayListener =
+            new android.hardware.display.DisplayManager.DisplayListener() {
+                @Override public void onDisplayAdded(int id) { }
+                @Override public void onDisplayRemoved(int id) { }
+                @Override public void onDisplayChanged(int id) { thermalView.invalidate(); }
+            };
+
     @Override
     protected void onDestroy() {
+        ((android.hardware.display.DisplayManager) getSystemService(Context.DISPLAY_SERVICE))
+                .unregisterDisplayListener(displayListener);
         unregisterReceiver(usbReceiver);
         closeCamera();
         worker.shutdownNow();
@@ -442,7 +455,7 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         final android.content.SharedPreferences prefs = getSharedPreferences("viewer", MODE_PRIVATE);
         final TextView strengthLabel = new TextView(this);
         final SeekBar strength = new SeekBar(this);
-        strength.setMax(200); // 0~2.0
+        strength.setMax(300); // 0~3.0
         strength.setProgress(Math.round(renderer.getMsxStrength() * 100));
         final TextView distLabel = new TextView(this);
         final SeekBar dist = new SeekBar(this);
@@ -476,8 +489,13 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         enhanceBox.setText(R.string.opt_enhance);
         enhanceBox.setChecked(renderer.isEnhance());
         enhanceBox.setOnCheckedChangeListener((b, c) -> renderer.setEnhance(c));
+        final android.widget.CheckBox lensBox = new android.widget.CheckBox(this);
+        lensBox.setText(R.string.opt_lens_front);
+        lensBox.setChecked(thermalView.isLensFacingScreen());
+        lensBox.setOnCheckedChangeListener((b, c) -> thermalView.setLensFacingScreen(c));
         box.addView(denoiseBox);
         box.addView(enhanceBox);
+        box.addView(lensBox);
         box.addView(strengthLabel);
         box.addView(strength);
         box.addView(distLabel);
@@ -488,6 +506,7 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
                 .setPositiveButton(R.string.ok, (d, w) -> prefs.edit()
                         .putBoolean("denoise", renderer.isDenoise())
                         .putBoolean("enhance", renderer.isEnhance())
+                        .putBoolean("lensFacingScreen", thermalView.isLensFacingScreen())
                         .putFloat("msxStrength", renderer.getMsxStrength())
                         .putFloat("fusionDistance", (float) renderer.getFusion().distanceM)
                         .apply())

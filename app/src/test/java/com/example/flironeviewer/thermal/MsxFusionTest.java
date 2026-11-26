@@ -37,4 +37,24 @@ public class MsxFusionTest {
         assertTrue(edgeDark < flat - 30);
         assertTrue(edgeBright > flat + 30);
     }
+
+    @Test
+    public void weakVisualEdgeIsStillClearlyVisible() {
+        // 어두운 실화상의 약한 경계(휘도 20 → 40)도 윤곽이 뚜렷해야 함
+        int tw = 4, th = 4, ow = 16, oh = 16;
+        int[] raw = new int[tw * th];
+        java.util.Arrays.fill(raw, 100);
+        int[] gray = new int[256];
+        for (int i = 0; i < 256; i++) gray[i] = 0xFF000000 | i << 16 | i << 8 | i;
+        int[] vis = new int[ow * oh];
+        for (int y = 0; y < oh; y++) for (int x = 0; x < ow; x++) {
+            int v = x < ow / 2 ? 20 : 40;
+            vis[y * ow + x] = 0xFF000000 | v << 16 | v << 8 | v;
+        }
+        int[] out = Msx.compose(raw, tw, th, 0, 200, gray, vis, ow, oh, 1.0f, 4);
+        int flat = out[8 * ow + 1] & 0xFF;
+        int dark = out[8 * ow + 7] & 0xFF, bright = out[8 * ow + 8] & 0xFF;
+        assertTrue("dark=" + dark + " flat=" + flat, flat - dark >= 12);
+        assertTrue("bright=" + bright + " flat=" + flat, bright - flat >= 12);
+    }
 }

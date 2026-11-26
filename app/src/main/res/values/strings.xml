@@ -26,6 +26,7 @@
     <string name="snapshot_failed">Save failed: %1$s</string>
     <string name="msx_title">Image quality &amp; MSX settings</string>
     <string name="opt_denoise">Temporal noise reduction</string>
+    <string name="opt_lens_front">Lens faces the screen side (selfie)</string>
     <string name="opt_enhance">Enhance resolution (visual-guided)</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>

@@ -128,7 +128,7 @@ public final class FrameRenderer {
             // ② 실화상 기반 가이드 필터: 열 경계를 실화상 경계에 맞춰 선명하게
             float[] v = enhance ? Enhance.guidedFilter(guide, up, ow, oh, GUIDE_RADIUS, GUIDE_EPS) : up;
             int[] out = Enhance.colorize(v, loI, hiI, colors);
-            if (msx) Enhance.addEdges(out, guide, ow, oh, msxStrength, Math.max(2, scale / 2));
+            if (msx) Enhance.addEdges(out, guide, ow, oh, msxStrength, Math.max(3, scale * 2 / 3));
             thermal = Bitmap.createBitmap(out, ow, oh, Bitmap.Config.ARGB_8888);
         } else {
             int[] px = Enhance.colorize(disp, loI, hiI, colors);

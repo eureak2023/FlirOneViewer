@@ -22,41 +22,10 @@ public final class Msx {
      */
     public static int[] compose(int[] raw, int tw, int th, int lo, int hi, int[] colors,
                                 int[] visual, int ow, int oh, float strength, int blurRadius) {
-        int n = ow * oh;
-        int[] y = new int[n];
-        for (int i = 0; i < n; i++) {
-            int c = visual[i];
-            y[i] = (((c >> 16) & 0xFF) * 77 + ((c >> 8) & 0xFF) * 150 + (c & 0xFF) * 29) >> 8;
-        }
-        int[] blur = boxBlur(y, ow, oh, blurRadius);
-
-        int[] out = new int[n];
-        float scale = 255f / Math.max(1, hi - lo);
-        float fx = (float) tw / ow, fy = (float) th / oh;
-        for (int oy = 0; oy < oh; oy++) {
-            // 열화상 쌍선형 보간 좌표
-            float sy = (oy + 0.5f) * fy - 0.5f;
-            int y0 = Math.max(0, Math.min(th - 1, (int) Math.floor(sy)));
-            int y1 = Math.min(th - 1, y0 + 1);
-            float wy = Math.max(0f, Math.min(1f, sy - y0));
-            for (int ox = 0; ox < ow; ox++) {
-                float sx = (ox + 0.5f) * fx - 0.5f;
-                int x0 = Math.max(0, Math.min(tw - 1, (int) Math.floor(sx)));
-                int x1 = Math.min(tw - 1, x0 + 1);
-                float wx = Math.max(0f, Math.min(1f, sx - x0));
-                float v = (raw[y0 * tw + x0] * (1 - wx) + raw[y0 * tw + x1] * wx) * (1 - wy)
-                        + (raw[y1 * tw + x0] * (1 - wx) + raw[y1 * tw + x1] * wx) * wy;
-                int idx = (int) ((v - lo) * scale);
-                int c = colors[idx < 0 ? 0 : (idx > 255 ? 255 : idx)];
-
-                int i = oy * ow + ox;
-                int e = (int) ((y[i] - blur[i]) * strength);
-                int r = clamp(((c >> 16) & 0xFF) + e);
-                int g = clamp(((c >> 8) & 0xFF) + e);
-                int b = clamp((c & 0xFF) + e);
-                out[i] = 0xFF000000 | r << 16 | g << 8 | b;
-            }
-        }
+        float[] rf = new float[raw.length];
+        for (int i = 0; i < raw.length; i++) rf[i] = raw[i];
+        int[] out = Enhance.colorize(Enhance.upsampleBilinear(rf, tw, th, ow, oh), lo, hi, colors);
+        Enhance.addEdges(out, Enhance.luma(visual), ow, oh, strength, blurRadius);
         return out;
     }
 

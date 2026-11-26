@@ -25,6 +25,7 @@
     <string name="snapshot_failed">저장 실패: %1$s</string>
     <string name="msx_title">화질·윤곽선(MSX) 설정</string>
     <string name="opt_denoise">노이즈 제거 (시간축)</string>
+    <string name="opt_lens_front">렌즈가 화면 쪽(셀카 방향)을 봄</string>
     <string name="opt_enhance">화질 향상 (실화상 기반 업스케일)</string>
     <string name="ok">확인</string>
     <string name="cancel">취소</string>
