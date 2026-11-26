@@ -9,7 +9,6 @@
     <string name="status_disconnected">카메라 연결이 끊어졌습니다</string>
     <string name="status_ffc">셔터 보정 중…</string>
     <string name="btn_palette">팔레트</string>
-    <string name="btn_mode">모드</string>
     <string name="btn_rotate">회전</string>
     <string name="btn_lock">범위고정</string>
     <string name="btn_unlock">자동범위</string>
@@ -32,12 +31,19 @@
     <string name="status_connect_failed">연결 실패: %1$s</string>
     <string name="st_calibrating">보정대기</string>
     <string name="st_calibrated">보정됨</string>
-    <string name="st_battery">배터리 %1$d%%</string>
-    <string name="st_shutter">셔터</string>
-    <string name="st_shutter_temp">셔터온도 %1$.1f°C</string>
     <string name="st_corrupt">손상프레임 %1$d</string>
-    <string name="st_crc">CRC불일치 %1$d</string>
     <string name="msx_strength">윤곽 강도: %1$d%%</string>
     <string name="msx_distance">정합 거리(시차): %1$.1f m</string>
     <string name="none">(없음)</string>
+    <string name="empty_hint">아이폰용(라이트닝) 카메라는 라이트닝 → USB-C 젠더로 연결하세요.
+카메라 전원을 먼저 켜 주세요.</string>
+    <string name="state_offline">연결 안 됨</string>
+    <string name="state_live">%1$.1f fps</string>
+    <string name="spot">스팟</string>
+    <string name="temp_placeholder">--.-°</string>
+    <string name="emissivity_chip_default">ε 0.95</string>
+    <string name="battery_unknown" formatted="false">--%</string>
+    <string name="btn_settings">설정</string>
+    <string name="max_fmt">▲ %1$s</string>
+    <string name="min_fmt">▼ %1$s</string>
 </resources>

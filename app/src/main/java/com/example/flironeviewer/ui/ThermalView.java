@@ -147,46 +147,93 @@ public final class ThermalView extends View {
 
         if (converter == null) return;
 
+        drawColorBar(canvas, f);
+
         // 최고/최저 온도 마커
         int maxX = img.maxIndex % w, maxY = img.maxIndex / w;
         int minX = img.minIndex % w, minY = img.minIndex / w;
-        drawMarker(canvas, maxX + 0.5f, maxY + 0.5f, Color.rgb(255, 60, 40), converter.celsius(img.max), true);
-        drawMarker(canvas, minX + 0.5f, minY + 0.5f, Color.rgb(60, 160, 255), converter.celsius(img.min), false);
+        drawMarker(canvas, maxX + 0.5f, maxY + 0.5f, HOT, converter.celsius(img.max), true);
+        drawMarker(canvas, minX + 0.5f, minY + 0.5f, COLD, converter.celsius(img.min), false);
 
-        // 스팟 측정
-        int sx = Math.min(w - 1, (int) (spotU * w)), sy = Math.min(h - 1, (int) (spotV * h));
-        double spotRaw = img.spot(sx, sy);
-        double spotC = converter.rawToCelsius(spotRaw);
+        // 스팟 레티클 + 온도 라벨
+        double spotC = getSpotCelsius();
         pt[0] = spotU * w;
         pt[1] = spotV * h;
         imageMatrix.mapPoints(pt);
-        float r = 14 * dp;
+        float r = 11 * dp, gap = 4 * dp, tick = 7 * dp;
         stroke.setColor(Color.WHITE);
-        canvas.drawCircle(pt[0], pt[1], r * 0.45f, stroke);
-        canvas.drawLine(pt[0] - r, pt[1], pt[0] - r * 0.45f, pt[1], stroke);
-        canvas.drawLine(pt[0] + r * 0.45f, pt[1], pt[0] + r, pt[1], stroke);
-        canvas.drawLine(pt[0], pt[1] - r, pt[0], pt[1] - r * 0.45f, stroke);
-        canvas.drawLine(pt[0], pt[1] + r * 0.45f, pt[0], pt[1] + r, stroke);
-        text.setTextSize(18 * dp);
-        canvas.drawText(fmt(spotC), pt[0] + r + 4 * dp, pt[1] - 4 * dp, text);
+        stroke.setStrokeWidth(1.5f * dp);
+        canvas.drawCircle(pt[0], pt[1], r, stroke);
+        canvas.drawLine(pt[0] - r - gap - tick, pt[1], pt[0] - r - gap, pt[1], stroke);
+        canvas.drawLine(pt[0] + r + gap, pt[1], pt[0] + r + gap + tick, pt[1], stroke);
+        canvas.drawLine(pt[0], pt[1] - r - gap - tick, pt[0], pt[1] - r - gap, stroke);
+        canvas.drawLine(pt[0], pt[1] + r + gap, pt[0], pt[1] + r + gap + tick, stroke);
+        fill.setColor(Color.WHITE);
+        canvas.drawCircle(pt[0], pt[1], 1.5f * dp, fill);
+        drawLabelBeside(canvas, fmt(spotC), pt[0], pt[1], r + gap + tick + 6 * dp, 16 * dp, Color.WHITE);
+    }
 
-        drawColorBar(canvas, f);
+    private static final int HOT = 0xFFFF6B5E, COLD = 0xFF5EB2FF;
+    private final RectF pill = new RectF();
+
+    /** 반투명 둥근 배경 위에 글자를 그립니다. (x,y) 는 정렬 기준점과 세로 중앙. */
+    private void drawPill(Canvas c, String s, float x, float y, Paint.Align align, float size, int color) {
+        text.setTextSize(size);
+        text.setColor(color);
+        text.setTextAlign(Paint.Align.LEFT);
+        float tw = text.measureText(s);
+        float padH = 7 * dp, padV = 4 * dp;
+        float left = align == Paint.Align.LEFT ? x : (align == Paint.Align.RIGHT ? x - tw - 2 * padH : x - tw / 2 - padH);
+        Paint.FontMetrics fm = text.getFontMetrics();
+        float th = fm.descent - fm.ascent;
+        pill.set(left, y - th / 2 - padV, left + tw + 2 * padH, y + th / 2 + padV);
+        fill.setColor(0x99000000);
+        float rr = pill.height() / 2;
+        c.drawRoundRect(pill, rr, rr, fill);
+        c.drawText(s, left + padH, y - (fm.ascent + fm.descent) / 2, text);
+        text.setColor(Color.WHITE);
+    }
+
+    /** 컬러바 왼쪽 끝(px). 라벨이 컬러바와 겹치지 않게 하는 데 씁니다. */
+    private float colorBarLeft = Float.MAX_VALUE;
+
+    /** 점 (x,y) 오른쪽에 라벨을 그리되, 컬러바·화면 끝에 닿으면 왼쪽에 그립니다. */
+    private void drawLabelBeside(Canvas c, String s, float x, float y, float offset, float size, int color) {
+        text.setTextSize(size);
+        float width = text.measureText(s) + 14 * dp;
+        RectF cb = captureBounds;
+        float limit = Math.min(colorBarLeft - 6 * dp, (cb != null ? cb.right : getWidth()) - 4 * dp);
+        if (x + offset + width > limit) {
+            drawPill(c, s, x - offset, y, Paint.Align.RIGHT, size, color);
+        } else {
+            drawPill(c, s, x + offset, y, Paint.Align.LEFT, size, color);
+        }
+    }
+
+    /** 현재 스팟 위치의 온도(°C). 원본 센서 값 기준. 프레임이 없으면 NaN. */
+    public double getSpotCelsius() {
+        FrameRenderer.RenderedFrame f = frame;
+        if (f == null || converter == null) return Double.NaN;
+        ThermalImage img = f.image;
+        int sx = Math.min(img.width - 1, (int) (spotU * img.width));
+        int sy = Math.min(img.height - 1, (int) (spotV * img.height));
+        return converter.rawToCelsius(img.spot(sx, sy));
     }
 
     private void drawMarker(Canvas c, float ix, float iy, int color, double tempC, boolean up) {
         pt[0] = ix;
         pt[1] = iy;
         imageMatrix.mapPoints(pt);
-        float s = 7 * dp;
+        float s = 6 * dp;
         path.reset();
         if (up) {
             path.moveTo(pt[0], pt[1] - s);
-            path.lineTo(pt[0] - s, pt[1] + s * 0.7f);
-            path.lineTo(pt[0] + s, pt[1] + s * 0.7f);
+            path.lineTo(pt[0] - s, pt[1] + s * 0.75f);
+            path.lineTo(pt[0] + s, pt[1] + s * 0.75f);
         } else {
             path.moveTo(pt[0], pt[1] + s);
-            path.lineTo(pt[0] - s, pt[1] - s * 0.7f);
-            path.lineTo(pt[0] + s, pt[1] - s * 0.7f);
+            path.lineTo(pt[0] - s, pt[1] - s * 0.75f);
+            path.lineTo(pt[0] + s, pt[1] - s * 0.75f);
         }
         path.close();
         fill.setColor(color);
@@ -194,38 +241,38 @@ public final class ThermalView extends View {
         stroke.setColor(Color.WHITE);
         stroke.setStrokeWidth(1.2f * dp);
         c.drawPath(path, stroke);
-        stroke.setStrokeWidth(2 * dp);
-        text.setTextSize(13 * dp);
-        c.drawText(fmt(tempC), pt[0] + s + 2 * dp, pt[1] + 4 * dp, text);
+        drawLabelBeside(c, fmt(tempC), pt[0], pt[1], s + 4 * dp, 12 * dp, color);
     }
 
     private void drawColorBar(Canvas c, FrameRenderer.RenderedFrame f) {
-        float barW = 12 * dp, margin = 10 * dp;
+        float barW = 8 * dp, margin = 14 * dp;
         RectF cb = captureBounds;
-        // 화면: 뷰 전체 높이 기준(라벨은 위아래 여백에). 저장: 잘라낸 영상 영역 안에 라벨까지 들어가게.
-        float areaTop = cb != null ? cb.top : 0, areaBottom = cb != null ? cb.bottom : getHeight();
+        // 화면: 뷰 세로 중앙(위아래 오버레이를 피함). 저장: 잘라낸 영상 영역 안.
+        float areaTop = cb != null ? cb.top : (useSafeArea ? safeTop : 0);
+        float areaBottom = cb != null ? cb.bottom : (useSafeArea ? getHeight() - safeBottom : getHeight());
         float areaRight = cb != null ? cb.right : getWidth();
-        float top = areaTop + 36 * dp, bottom = areaBottom - 36 * dp;
-        if (bottom - top < 60 * dp) return;
+        float areaH = areaBottom - areaTop;
+        float barH = Math.min(areaH * (cb != null ? 0.62f : 0.40f), 320 * dp);
+        if (barH < 60 * dp) return;
+        float top = areaTop + (areaH - barH) / 2, bottom = top + barH;
         float left = areaRight - margin - barW;
+        colorBarLeft = left;
         int[] colors = palette.colors;
-        float step = (bottom - top) / 256f;
-        for (int i = 0; i < 256; i++) {
-            fill.setColor(colors[255 - i]);
-            c.drawRect(left, top + i * step, left + barW, top + (i + 1) * step + 1, fill);
-        }
-        stroke.setColor(Color.WHITE);
+        int[] stops = new int[17];
+        for (int i = 0; i < stops.length; i++) stops[i] = colors[255 - i * 255 / (stops.length - 1)];
+        fill.setColor(Color.WHITE); // 이전 라벨 배경의 반투명 알파가 남지 않도록
+        fill.setShader(new android.graphics.LinearGradient(0, top, 0, bottom, stops, null, android.graphics.Shader.TileMode.CLAMP));
+        pill.set(left, top, left + barW, bottom);
+        c.drawRoundRect(pill, barW / 2, barW / 2, fill);
+        fill.setShader(null);
+        stroke.setColor(0x66FFFFFF);
         stroke.setStrokeWidth(1 * dp);
-        c.drawRect(new RectF(left, top, left + barW, bottom), stroke);
-        stroke.setStrokeWidth(2 * dp);
-        text.setTextSize(13 * dp);
-        text.setTextAlign(Paint.Align.RIGHT);
-        c.drawText(fmt(converter.celsius(f.rangeHighRaw)), left + barW, top - 8 * dp, text);
-        c.drawText(fmt(converter.celsius(f.rangeLowRaw)), left + barW, bottom + 20 * dp, text);
-        text.setTextAlign(Paint.Align.LEFT);
+        c.drawRoundRect(pill, barW / 2, barW / 2, stroke);
+        float cx = left + barW / 2;
+        drawPill(c, fmt(converter.celsius(f.rangeHighRaw)), cx + barW / 2 + 2 * dp, top - 16 * dp, Paint.Align.RIGHT, 12 * dp, Color.WHITE);
+        drawPill(c, fmt(converter.celsius(f.rangeLowRaw)), cx + barW / 2 + 2 * dp, bottom + 16 * dp, Paint.Align.RIGHT, 12 * dp, Color.WHITE);
     }
 
-    /** 세로 화면에서 자동으로 더할 회전각(센서 영상은 가로 방향). */
     /** 기본 세로 화면(ROTATION_0)에서 영상이 바로 서는 회전각 (실기기 확인). */
     private static final int PORTRAIT_AUTO_ROTATION = 270;
 
@@ -250,17 +297,35 @@ public final class ThermalView extends View {
         return (((rotation + PORTRAIT_AUTO_ROTATION - s * displayDeg) % 360) + 360) % 360;
     }
 
+    /** 상단·하단 오버레이가 차지하는 높이(px). 영상은 가능하면 이 영역을 피해 배치합니다. */
+    private int safeTop, safeBottom;
+
+    public void setSafeInsets(int top, int bottom) {
+        if (top == safeTop && bottom == safeBottom) return;
+        safeTop = top;
+        safeBottom = bottom;
+        invalidate();
+    }
+
+    /** 현재 영상이 안전 영역에 맞춰졌는지 (가로 화면처럼 너무 작아지면 전체 화면을 씀). */
+    private boolean useSafeArea;
+
     private void buildMatrix(int w, int h) {
         int vw = getWidth(), vh = getHeight();
         int rotation = getEffectiveRotation();
         boolean swap = rotation == 90 || rotation == 270;
         float rw = swap ? h : w, rh = swap ? w : h;
-        float s = Math.min(vw / rw, vh / rh);
+        float full = Math.min(vw / rw, vh / rh);
+        float availH = vh - safeTop - safeBottom;
+        float safe = availH > 0 ? Math.min(vw / rw, availH / rh) : 0;
+        useSafeArea = captureBounds == null && safe >= full * 0.8f;
+        float s = useSafeArea ? safe : full;
+        float cy = useSafeArea ? safeTop + availH / 2f : vh / 2f;
         imageMatrix.reset();
         imageMatrix.postTranslate(-w / 2f, -h / 2f);
         imageMatrix.postRotate(rotation);
         imageMatrix.postScale(s, s);
-        imageMatrix.postTranslate(vw / 2f, vh / 2f);
+        imageMatrix.postTranslate(vw / 2f, cy);
     }
 
     private static float clamp01(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }

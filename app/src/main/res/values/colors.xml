@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FF000000</color>
+    <color name="accent">#FFFF8A3D</color>
+    <color name="on_accent">#FF1A1206</color>
+    <color name="glass">#A6121316</color>
+    <color name="glass_strong">#D9121316</color>
+    <color name="glass_stroke">#26FFFFFF</color>
+    <color name="text_primary">#FFF5F5F7</color>
+    <color name="text_secondary">#FFA1A1AA</color>
+    <color name="hot">#FFFF6B5E</color>
+    <color name="cold">#FF5EB2FF</color>
+    <color name="dot_ok">#FF34D399</color>
+    <color name="dot_warn">#FFFBBF24</color>
+    <color name="dot_off">#FF71717A</color>
+</resources>
