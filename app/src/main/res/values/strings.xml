@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 기본(영어). 한국어는 values-ko/strings.xml -->
+<resources>
+    <string name="app_name">FLIR ONE Viewer</string>
+    <string name="status_no_device">Connect a FLIR ONE camera</string>
+    <string name="status_permission">Requesting USB permission…</string>
+    <string name="status_permission_denied">USB permission denied. Reconnect the camera.</string>
+    <string name="status_connecting">Connecting to camera…</string>
+    <string name="status_waiting_frames">Waiting for video… (check the camera power button)</string>
+    <string name="status_disconnected">Camera disconnected</string>
+    <string name="status_ffc">Shutter calibration (FFC)…</string>
+    <string name="btn_palette">Palette</string>
+    <string name="btn_mode">Mode</string>
+    <string name="btn_rotate">Rotate</string>
+    <string name="btn_lock">Lock range</string>
+    <string name="btn_unlock">Auto range</string>
+    <string name="btn_emissivity">Emissivity</string>
+    <string name="btn_snapshot">Save</string>
+    <string name="mode_msx">MSX</string>
+    <string name="mode_thermal">Thermal</string>
+    <string name="mode_visual">Visual</string>
+    <string name="mode_blend">Blend</string>
+    <string name="emissivity_title">Emissivity (ε)</string>
+    <string name="status_json_title">Camera status JSON</string>
+    <string name="snapshot_saved">Saved: %1$s</string>
+    <string name="snapshot_failed">Save failed: %1$s</string>
+    <string name="msx_title">Image quality &amp; MSX settings</string>
+    <string name="opt_denoise">Temporal noise reduction</string>
+    <string name="opt_enhance">Enhance resolution (visual-guided)</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="status_connect_failed">Connection failed: %1$s</string>
+    <string name="st_calibrating">Calibrating</string>
+    <string name="st_calibrated">Calibrated</string>
+    <string name="st_battery">Battery %1$d%%</string>
+    <string name="st_shutter">Shutter</string>
+    <string name="st_shutter_temp">Shutter %1$.1f°C</string>
+    <string name="st_corrupt">Corrupt frames %1$d</string>
+    <string name="st_crc">CRC mismatch %1$d</string>
+    <string name="msx_strength">Edge strength: %1$d%%</string>
+    <string name="msx_distance">Alignment distance (parallax): %1$.1f m</string>
+    <string name="none">(none)</string>
+</resources>

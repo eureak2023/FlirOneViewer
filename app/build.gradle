@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+// 릴리즈 서명 정보: 프로젝트 루트의 keystore.properties (커밋 금지, .gitignore 처리됨)
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+android {
+    namespace = 'com.example.flironeviewer'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.example.flironeviewer'
+        minSdk = 29
+        targetSdk = 36
+        versionCode = 1
+        versionName = '1.0'
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile = rootProject.file(keystoreProps['storeFile'])
+                storePassword = keystoreProps['storePassword']
+                keyAlias = keystoreProps['keyAlias']
+                keyPassword = keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            // keystore.properties 가 없으면 서명 없이 빌드됩니다(app-release-unsigned.apk).
+            if (keystorePropsFile.exists()) {
+                signingConfig = signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // 앱 자체는 Android 프레임워크 API만 사용합니다(외부 라이브러리 없음).
+    testImplementation 'junit:junit:4.13.2'
+}

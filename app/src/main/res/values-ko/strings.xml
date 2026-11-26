@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FLIR ONE 뷰어</string>
+    <string name="status_no_device">FLIR ONE 카메라를 연결하세요</string>
+    <string name="status_permission">USB 권한을 요청하는 중…</string>
+    <string name="status_permission_denied">USB 권한이 거부되었습니다. 카메라를 다시 연결하세요.</string>
+    <string name="status_connecting">카메라 연결 중…</string>
+    <string name="status_waiting_frames">영상 수신 대기 중… (카메라 전원 버튼을 확인하세요)</string>
+    <string name="status_disconnected">카메라 연결이 끊어졌습니다</string>
+    <string name="status_ffc">셔터 보정 중…</string>
+    <string name="btn_palette">팔레트</string>
+    <string name="btn_mode">모드</string>
+    <string name="btn_rotate">회전</string>
+    <string name="btn_lock">범위고정</string>
+    <string name="btn_unlock">자동범위</string>
+    <string name="btn_emissivity">방사율</string>
+    <string name="btn_snapshot">저장</string>
+    <string name="mode_msx">윤곽선</string>
+    <string name="mode_thermal">열화상</string>
+    <string name="mode_visual">실화상</string>
+    <string name="mode_blend">혼합</string>
+    <string name="emissivity_title">방사율 (ε)</string>
+    <string name="status_json_title">카메라 상태 JSON</string>
+    <string name="snapshot_saved">저장됨: %1$s</string>
+    <string name="snapshot_failed">저장 실패: %1$s</string>
+    <string name="msx_title">화질·윤곽선(MSX) 설정</string>
+    <string name="opt_denoise">노이즈 제거 (시간축)</string>
+    <string name="opt_enhance">화질 향상 (실화상 기반 업스케일)</string>
+    <string name="ok">확인</string>
+    <string name="cancel">취소</string>
+    <string name="status_connect_failed">연결 실패: %1$s</string>
+    <string name="st_calibrating">보정대기</string>
+    <string name="st_calibrated">보정됨</string>
+    <string name="st_battery">배터리 %1$d%%</string>
+    <string name="st_shutter">셔터</string>
+    <string name="st_shutter_temp">셔터온도 %1$.1f°C</string>
+    <string name="st_corrupt">손상프레임 %1$d</string>
+    <string name="st_crc">CRC불일치 %1$d</string>
+    <string name="msx_strength">윤곽 강도: %1$d%%</string>
+    <string name="msx_distance">정합 거리(시차): %1$.1f m</string>
+    <string name="none">(없음)</string>
+</resources>

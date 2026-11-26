@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#CC111111"
+        android:padding="8dp"
+        android:text="@string/status_no_device"
+        android:textColor="#FFEEEEEE"
+        android:textSize="13sp" />
+
+    <com.example.flironeviewer.ui.ThermalView
+        android:id="@+id/thermalView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#CC111111"
+        android:orientation="horizontal">
+
+        <Button android:id="@+id/btnPalette" style="@style/BarButton" android:text="@string/btn_palette" />
+        <Button android:id="@+id/btnMode" style="@style/BarButton" android:text="@string/btn_mode" />
+        <Button android:id="@+id/btnRotate" style="@style/BarButton" android:text="@string/btn_rotate" />
+        <Button android:id="@+id/btnLock" style="@style/BarButton" android:text="@string/btn_lock" />
+        <Button android:id="@+id/btnEmissivity" style="@style/BarButton" android:text="@string/btn_emissivity" />
+        <Button android:id="@+id/btnSnapshot" style="@style/BarButton" android:text="@string/btn_snapshot" />
+    </LinearLayout>
+</LinearLayout>
