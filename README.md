@@ -8,6 +8,8 @@ FLIR 공식 앱이나 FLIR SDK 없이, USB 프로토콜을 **순수 Java**로 �
 FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카메라를 안드로이드폰에 꽂아도 5초마다 재부팅만 반복합니다.
 이 앱은 iAP2 의 호스트(아이폰) 역할을 대신 수행해서 영상을 받아 옵니다.
 
+**UV 카메라(uvlook mini 등 표준 USB 카메라)** 도 지원합니다. 꽂으면 UV 카메라 화면이 자동으로 열립니다.
+
 <table align="center">
   <tr>
     <td align="center">
@@ -29,7 +31,8 @@ FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카�
 > without the FLIR SDK. It also works with the **iPhone (Lightning) FLIR ONE** on Android: the app implements
 > the Apple iAP2 host handshake that the camera expects, then streams thermal + visual frames over USB.
 > Per-camera radiometric calibration is downloaded from the camera; the app adds Lepton-spotmeter drift
-> correction, MSX-style edge overlay, visual-guided upscaling and temporal denoising. UI: English / Korean.
+> correction, MSX-style edge overlay, visual-guided upscaling and temporal denoising. It also views
+> **UVC UV cameras** (e.g. uvlook mini) with a pure-Java UVC driver (bulk MJPEG/YUYV). UI: English / Korean.
 
 ---
 
@@ -48,6 +51,9 @@ FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카�
 | 사진 저장 | 영상 부분만 잘라 JPEG 로 저장 (`Pictures/FlirOneViewer`, 갤러리에 표시) |
 | 화면 회전 | 4방향(거꾸로 세로 포함) 자동 회전. 카메라가 폰에 고정되어 있으므로 화면 회전 각도만큼 영상을 반대로 보정 |
 | 화면 디자인 | 카메라 앱 형태의 전체 화면 어두운 UI, 반투명 칩·모드 바·셔터 버튼, 촬영 플래시·진동, 설정 기억 |
+| 전체 화면 | 시스템 바와 조작 UI 를 숨기고 영상만 표시. **원본 비율 / 화면에 맞추기(늘이기) / 채우기(잘라내기)** 전환 |
+| 렌즈 방향 | 카메라를 화면 쪽(셀카)으로 꽂았을 때 가로 화면에서 영상이 뒤집히지 않도록 보정. 전환 버튼 + **자동 감지**(자이로와 영상 움직임 비교) |
+| UV 카메라 | uvlook mini 등 표준 USB(UVC) 카메라 실시간 보기, 사진 저장, 회전·좌우 반전, 해상도 선택, 밝기·대비·채도·선명도 조정 |
 | 기타 | 범위 고정/자동, 수동 90° 회전, 방사율 조정, 배터리 잔량 표시, 영어·한국어 UI |
 
 카메라 전용 데이터(보정값 등)는 연결할 때마다 카메라에서 자동으로 받아오며, 사용자가 따로 설정할 것은 없습니다.
@@ -59,6 +65,8 @@ FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카�
 | **아이폰용 FLIR ONE (Lightning)** — 모델 435-0004-01, 펌웨어 1.0.34, 열화상 80×60 | ✅ 실기기 검증 (Samsung Galaxy SM-S938N, Android 16) |
 | 안드로이드용 FLIR ONE (USB-C / micro-USB, Gen3 / Pro / Pro LT) | ⚠️ 이론상 지원. 공식 앱과 같은 USB 절차를 구현했지만 실기기로는 시험하지 않음 |
 | FLIR ONE Edge / Edge Pro (Wi-Fi·Bluetooth) | ❌ 지원 안 함 |
+| **UV 카메라 uvlook mini** (`13d3:784b`, 1280×720 MJPEG) | ✅ 실기기 검증 (SM-S938N, 약 17fps) |
+| 그 밖의 표준 USB(UVC) 카메라 — 벌크 전송 방식 | ⚠️ 이론상 지원 (`0c45:64ab` 는 UVLOOK 앱 장치 목록에 있으나 미시험) |
 
 - 폰 요구 사항: Android 10 (API 29) 이상, USB 호스트(OTG) 지원
 - USB VID/PID: `0x09CB` / `0x1996` (아이폰용과 안드로이드용이 같음)
@@ -101,13 +109,37 @@ FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카�
 | 자물쇠 버튼 | 컬러 범위 고정 / 자동 (고정하면 주황색) |
 | 가운데 큰 원 | 사진 저장 (영상 부분만, `Pictures/FlirOneViewer`) |
 | 회전 버튼 | 영상 90° 회전 (기억됨) |
-| 톱니바퀴 | 화질·윤곽선 설정: 노이즈 제거, 화질 향상, 렌즈 방향(화면 쪽/뒷면), 윤곽 강도(0~300%), 정합 거리(0.1~5 m, 시차 보정) |
+| 상단 렌즈 방향 버튼 | 렌즈 뒷면 ↔ 화면 쪽(셀카) 전환 (화면 쪽이면 주황색) |
+| 상단 전체 화면 버튼 / 영상 두 번 탭 | 전체 화면 들어가기·나오기 (뒤로 가기로도 나옴). 전체 화면 오른쪽 위 칩으로 표시 방식 전환 |
+| 톱니바퀴 | 화질·윤곽선 설정: 노이즈 제거, 화질 향상, 렌즈 방향 자동 감지, 윤곽 강도(0~300%), 정합 거리(0.1~5 m, 시차 보정) |
+
+**렌즈 방향 자동 감지:** 카메라가 연결되면 폰을 앞뒤로 살짝 기울일 때의 자이로 회전과 영상이 움직인 방향을 비교해
+렌즈가 뒷면을 보는지 화면 쪽을 보는지 한 번 판별합니다. 판별 결과가 현재 설정과 다르면 알림과 함께 바꿉니다.
+폰을 고정해 두었거나 무늬가 없는 곳을 비추면 판별하지 않고 마지막 설정을 유지합니다. 버튼으로 직접 고르면 그 연결 동안은 자동 감지가 덮어쓰지 않습니다.
+
+### UV 카메라 (uvlook mini 등)
+
+1. UV 카메라를 폰에 꽂으면 **UV 카메라 화면**이 자동으로 열립니다. 열화상 화면의 안내 화면에 나오는 "UV 카메라 열기" 버튼으로도 열 수 있습니다.
+2. 처음에는 **카메라 권한**과 **USB 권한**을 차례로 묻습니다. 둘 다 허용합니다.
+   - Android 는 USB 비디오 장치에 접근하는 앱에 카메라 권한을 요구합니다. 권한이 없으면 USB 권한 창이 뜨지 않습니다.
+3. 기본 해상도는 1280×720 MJPEG 입니다(UVLOOK 앱 기본값과 같음).
+
+| 위치 / 조작 | 동작 |
+|---|---|
+| 상단 상태 칩 | 연결 상태, 해상도, fps |
+| 상단 표시 방식 칩 | 원본 비율 / 화면에 맞추기 / 채우기 |
+| 영상 탭 | 조작 UI·시스템 바 숨기기 / 다시 보이기 |
+| 조정 버튼 (왼쪽 첫 번째) | 밝기·대비·채도·선명도 (카메라가 지원하는 범위에서), 초기화 |
+| 좌우 반전 버튼 | 영상 좌우 반전 (기억됨) |
+| 가운데 큰 원 | 사진 저장 (`Pictures/FlirOneViewer/UV_….jpg`, 회전·반전 적용) |
+| 회전 버튼 | 영상 90° 회전 (기억됨) |
+| 톱니바퀴 | 해상도·포맷 선택 (카메라가 알려 준 목록) |
 
 ## 빌드
 
 - Android Studio 에서 이 폴더를 엽니다. `local.properties`(SDK 경로)는 Android Studio 가 자동으로 만듭니다.
 - 사용 버전: Gradle 9.8.1 (wrapper 포함), AGP 9.3.1, compileSdk/targetSdk 36, minSdk 29, Java 17. 외부 라이브러리는 쓰지 않습니다.
-- 디버그 빌드: `gradlew assembleDebug`, 단위 테스트: `gradlew testDebugUnitTest` (18개)
+- 디버그 빌드: `gradlew assembleDebug`, 단위 테스트: `gradlew testDebugUnitTest` (26개)
 - 릴리즈 빌드: `gradlew assembleRelease` → `app/build/outputs/apk/release/app-release.apk`
   - 서명하려면 프로젝트 루트에 `keystore.properties` 를 만듭니다. 이 파일과 키 파일은 저장소에 포함되지 않습니다.
     ```properties
@@ -135,7 +167,11 @@ FLIR 공식 안드로이드 앱에는 이 절차가 없어서, 아이폰용 카�
 | `thermal/Palette.java` | 컬러 팔레트 |
 | `ui/FrameRenderer.java`, `ui/ThermalView.java` | 표시용 비트맵 생성, 마커·컬러바·십자 그리기, 회전, 사진 캡처 |
 | `ui/PaletteSwatchView.java` | 팔레트 그라디언트 미리보기 (팔레트 버튼과 선택 패널) |
-| `MainActivity.java` | 권한, 장치 연결·분리, FFC 처리, 설정, 저장 |
+| `thermal/LensFacingDetector.java` | 자이로·영상 이동 상관으로 렌즈 방향(뒷면/화면 쪽) 판별 |
+| `MainActivity.java` | 권한, 장치 연결·분리, FFC 처리, 설정, 저장, 전체 화면 |
+| `usb/UvcCamera.java` | UV 카메라용 UVC 드라이버 (PROBE/COMMIT, 벌크 스트리밍, 프레임 조립, 처리 장치 제어) |
+| `protocol/UvcDescriptors.java`, `protocol/Mjpeg.java` | UVC 디스크립터 해석, MJPEG 기본 허프만 테이블 삽입, YUYV 변환 |
+| `UvcActivity.java`, `ui/UvcView.java` | UV 카메라 화면 (표시·회전·반전·저장·해상도·화질 조정) |
 
 ---
 
@@ -193,9 +229,30 @@ u32 0xBEEF | u32 seq | u32 total | u32 thermalSize | u32 jpegSize | u32 statusSi
   - 열 경계가 실화상 경계에 맞춰 선명해지고, 온도 차이가 없는 무늬는 옮겨지지 않습니다.
 - 온도 측정값(스팟·최고·최저)은 항상 **원본 센서 값**으로 계산합니다. 화질 향상은 표시에만 쓰입니다.
 
+### 렌즈 방향 자동 감지
+- 카메라를 반대로 꽂으면 카메라가 커넥터 축(영상 u 축)을 중심으로 180° 돌아갑니다.
+- 핀홀 카메라에서 회전 ω 에 대한 영상 이동은 `du = −f·(ω·y_c)`, `dv = +f·(ω·x_c)` 입니다.
+  - 뒷면 렌즈는 `y_c = B`, 화면 쪽 렌즈는 `y_c = −B` 이므로, 폰을 앞뒤로 기울일 때(B 축 회전) 영상이 움직이는 부호가 반대입니다.
+  - 좌우 회전(A 축)과 v 방향 이동의 상관은 렌즈 방향과 무관하므로, 자이로·영상 시간차(약 80ms) 추정과 신뢰도 확인에 씁니다.
+- 프레임 간 이동은 고역 통과한 영상의 블록 정합(±10px, 부화소 보정)으로 구합니다. 실화상이 있으면 실화상, 없으면 열화상을 씁니다.
+
+### UV 카메라 (UVLOOK 앱 분석)
+UV 카메라 전용 앱 UVLOOK(`com.iuv.android` 1.2.2)을 정적 분석했습니다.
+- 카메라는 전용 프로토콜이 없는 **표준 UVC 장치**입니다. 원본 앱은 오픈 소스 UVCCamera(libuvc)로 1280×720 MJPEG 를 받고
+  (실패하면 640×480, YUYV 순으로 재시도), 처리 장치(PU)의 밝기·대비·선명도·채도만 조절합니다.
+- 원본 앱의 장치 목록: `13d3:784b`(uvlook mini, Norelsys ns1085), `0c45:64ab`.
+- 이 앱은 네이티브 라이브러리 없이 같은 일을 Java 로 합니다.
+  1. `getRawDescriptors()` 로 VC/VS 인터페이스, 처리 장치 ID, MJPEG·YUYV 해상도 목록을 해석
+  2. `VS_PROBE_CONTROL` SET/GET → `VS_COMMIT_CONTROL` 로 포맷·해상도·프레임 간격 협상
+  3. 벌크 IN 엔드포인트에 `UsbRequest` 4개를 걸어 두고 페이로드(헤더 2~12바이트 + 데이터)를 받아 FID 전환·EOF 로 프레임 조립
+  4. 대부분의 UVC MJPEG 는 허프만 테이블(DHT)을 빼고 보내므로 JPEG 표준 부록 K 기본 테이블을 SOS 앞에 넣고 디코딩
+- 실측(uvlook mini): bcdUVC 1.00, 1280×720 / 640×480 / 160×120 (MJPEG·YUYV), 최대 페이로드 64KB, 1280×720 에서 약 17fps.
+
 ## 한계와 주의 사항
 
 - 이 앱은 Teledyne FLIR 와 관계없는 **비공식** 앱입니다. FLIR, FLIR ONE 은 Teledyne FLIR LLC 의 상표입니다.
 - 온도는 Lepton 센서의 라디오메트릭 정확도(대략 ±5°C 또는 ±5%) 수준입니다. **의료·안전·정밀 측정 용도로 쓰지 마세요.**
 - 화질 향상은 보기 좋게 다듬는 처리이며, 실제 측정 해상도(80×60)가 높아지지는 않습니다. 어두운 곳에서는 실화상 기반 기능의 효과가 줄어듭니다.
 - 고온 범위(ds400C) 전환, 카메라 펌웨어 업데이트, 카메라 저장 파일 가져오기는 지원하지 않습니다.
+- UV 카메라는 **벌크 전송 방식 UVC 카메라만** 지원합니다. Android Java API 가 등시성(isochronous) 전송을 지원하지 않기 때문입니다.
+  UV 카메라 영상은 측정값이 아니라 보기용입니다.
