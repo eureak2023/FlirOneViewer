@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UVLOOK 앱(com.iuv.android 1.2.2) res/xml/device_filter.xml 과 같은 UV 카메라:
+     13d3:784b (uvlook mini, Norelsys ns1085uvc), 0c45:64ab (Sonix) -->
+<resources>
+    <usb-device vendor-id="5075" product-id="30795" />
+    <usb-device vendor-id="3141" product-id="25771" />
+</resources>

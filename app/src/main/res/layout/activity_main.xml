@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -56,6 +57,20 @@
             android:text="@string/empty_hint"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
+
+        <!-- UV 카메라(UVC)가 꽂혀 있을 때만 표시 -->
+        <TextView
+            android:id="@+id/btnOpenUv"
+            style="@style/Chip"
+            android:layout_height="44dp"
+            android:layout_marginTop="20dp"
+            android:drawableStart="@drawable/ic_lens_flip"
+            android:drawablePadding="8dp"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:paddingStart="16dp"
+            android:paddingEnd="18dp"
+            android:text="@string/open_uv_camera"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- 상단 오버레이 -->
@@ -75,10 +90,18 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <!-- 상태 칩은 남는 폭 안에서만 커지고, 좁으면 글자를 줄임표로 줄입니다 -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1">
+
             <LinearLayout
                 android:id="@+id/chipStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
+                tools:ignore="UselessParent"
                 android:background="@drawable/bg_chip"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -104,11 +127,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
             </LinearLayout>
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/chipEmissivity"
@@ -126,6 +145,28 @@
                 android:paddingEnd="12dp"
                 android:text="@string/battery_unknown"
                 android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/btnLens"
+                android:layout_width="40dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip"
+                android:contentDescription="@string/btn_lens"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:scaleType="center"
+                android:src="@drawable/ic_lens_flip" />
+
+            <ImageButton
+                android:id="@+id/btnFullscreen"
+                android:layout_width="40dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip"
+                android:contentDescription="@string/btn_fullscreen"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:scaleType="center"
+                android:src="@drawable/ic_fullscreen" />
         </LinearLayout>
 
         <!-- 측정값 -->
@@ -308,5 +349,37 @@
                     android:src="@drawable/ic_settings" />
             </FrameLayout>
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- 전체 화면 조작: 표시 방식 전환 + 끝내기 (전체 화면일 때만 표시) -->
+    <LinearLayout
+        android:id="@+id/fullscreenControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:alpha="0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/btnScaleMode"
+            style="@style/Chip"
+            android:layout_height="40dp"
+            android:layout_marginEnd="10dp"
+            android:contentDescription="@string/btn_scale"
+            android:drawableStart="@drawable/ic_scale_original"
+            android:drawablePadding="6dp"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:paddingStart="12dp"
+            android:paddingEnd="14dp"
+            android:text="@string/scale_original" />
+
+        <ImageButton
+            android:id="@+id/btnExitFullscreen"
+            style="@style/RoundButton"
+            android:contentDescription="@string/btn_exit_fullscreen"
+            android:src="@drawable/ic_fullscreen_exit" />
     </LinearLayout>
 </FrameLayout>

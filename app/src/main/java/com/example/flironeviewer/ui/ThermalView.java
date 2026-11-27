@@ -11,6 +11,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -60,6 +61,46 @@ public final class ThermalView extends View {
         stroke.setStrokeWidth(2 * dp);
         stroke.setColor(Color.WHITE);
         stroke.setShadowLayer(2 * dp, 0, 0, Color.BLACK);
+        gestures = new GestureDetector(c, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                Runnable r = onDoubleTap;
+                if (r == null) return false;
+                r.run();
+                return true;
+            }
+        });
+    }
+
+    private final GestureDetector gestures;
+    private Runnable onDoubleTap;
+
+    /** 영상을 두 번 탭했을 때 실행할 동작 (전체 화면 전환). */
+    public void setOnDoubleTapListener(Runnable r) { onDoubleTap = r; }
+
+    /**
+     * 전체 화면 표시 방식.
+     * ORIGINAL = 원본 비율 유지(남는 곳은 검은 여백), STRETCH = 화면에 맞춰 늘림(비율 무시),
+     * FILL = 비율 유지한 채 화면을 가득 채움(넘치는 가장자리는 잘림).
+     */
+    public enum ScaleMode { ORIGINAL, STRETCH, FILL }
+
+    private ScaleMode scaleMode = ScaleMode.ORIGINAL;
+
+    public ScaleMode getScaleMode() { return scaleMode; }
+
+    public void setScaleMode(ScaleMode m) {
+        scaleMode = m;
+        invalidate();
+    }
+
+    /** 전체 화면: 위아래 오버레이를 피하지 않고 뷰 전체에 영상을 표시 방식대로 맞춥니다. */
+    private boolean fullscreen;
+
+    public void setFullscreen(boolean v) {
+        if (fullscreen == v) return;
+        fullscreen = v;
+        invalidate();
     }
 
     public void setConverter(TemperatureConverter c) { converter = c; invalidate(); }
@@ -106,8 +147,9 @@ public final class ThermalView extends View {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent e) {
+        boolean handled = gestures.onTouchEvent(e);
         FrameRenderer.RenderedFrame f = frame;
-        if (f == null) return false;
+        if (f == null) return handled || onDoubleTap != null;
         if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
             buildMatrix(f.image.width, f.image.height);
             if (imageMatrix.invert(inverse)) {
@@ -280,6 +322,9 @@ public final class ThermalView extends View {
     private boolean lensFacingScreen;
 
     public boolean isLensFacingScreen() { return lensFacingScreen; }
+
+    /** 자연 방향 화면(ROTATION_0)에서 영상을 바로 세우는 회전각. 렌즈 방향 자동 감지에 씁니다. */
+    public int getNaturalRotation() { return (rotation + PORTRAIT_AUTO_ROTATION) % 360; }
     public void setLensFacingScreen(boolean v) { lensFacingScreen = v; invalidate(); }
 
     /**
@@ -318,13 +363,21 @@ public final class ThermalView extends View {
         float full = Math.min(vw / rw, vh / rh);
         float availH = vh - safeTop - safeBottom;
         float safe = availH > 0 ? Math.min(vw / rw, availH / rh) : 0;
-        useSafeArea = captureBounds == null && safe >= full * 0.8f;
-        float s = useSafeArea ? safe : full;
+        useSafeArea = !fullscreen && captureBounds == null && safe >= full * 0.8f;
+        float sx = useSafeArea ? safe : full, sy = sx;
+        if (fullscreen) {
+            if (scaleMode == ScaleMode.STRETCH) {
+                sx = vw / rw;
+                sy = vh / rh;
+            } else if (scaleMode == ScaleMode.FILL) {
+                sx = sy = Math.max(vw / rw, vh / rh);
+            }
+        }
         float cy = useSafeArea ? safeTop + availH / 2f : vh / 2f;
         imageMatrix.reset();
         imageMatrix.postTranslate(-w / 2f, -h / 2f);
         imageMatrix.postRotate(rotation);
-        imageMatrix.postScale(s, s);
+        imageMatrix.postScale(sx, sy); // 회전 후 화면 축 기준이라 늘이기(비율 무시)도 그대로 적용됨
         imageMatrix.postTranslate(vw / 2f, cy);
     }
 

@@ -24,7 +24,6 @@
     <string name="snapshot_failed">저장 실패: %1$s</string>
     <string name="msx_title">화질·윤곽선(MSX) 설정</string>
     <string name="opt_denoise">노이즈 제거 (시간축)</string>
-    <string name="opt_lens_front">렌즈가 화면 쪽(셀카 방향)을 봄</string>
     <string name="opt_enhance">화질 향상 (실화상 기반 업스케일)</string>
     <string name="ok">확인</string>
     <string name="cancel">취소</string>
@@ -44,6 +43,38 @@
     <string name="emissivity_chip_default">ε 0.95</string>
     <string name="battery_unknown" formatted="false">--%</string>
     <string name="btn_settings">설정</string>
+    <string name="btn_fullscreen">전체 화면</string>
+    <string name="btn_exit_fullscreen">전체 화면 끝내기</string>
+    <string name="fullscreen_hint">영상을 두 번 탭하거나 뒤로 가기를 누르면 전체 화면이 끝납니다</string>
+    <string name="btn_scale">화면 크기</string>
+    <string name="scale_original">원본 비율</string>
+    <string name="scale_stretch">화면에 맞추기</string>
+    <string name="scale_fill">채우기</string>
+    <string name="uvc_title">UV 카메라</string>
+    <string name="uvc_waiting">UV 카메라를 연결하세요</string>
+    <string name="uvc_waiting_detail">uvlook mini 같은 표준 USB(UVC) 카메라를 지원합니다.</string>
+    <string name="uvc_connecting">연결 중…</string>
+    <string name="uvc_permission">카메라 USB 권한을 허용하세요</string>
+    <string name="uvc_camera_permission">UV 카메라를 쓰려면 카메라 권한을 허용하세요</string>
+    <string name="uvc_status">%1$d×%2$d · %3$.1f fps</string>
+    <string name="uvc_error">카메라 오류: %1$s</string>
+    <string name="uvc_disconnected">UV 카메라 연결 끊김</string>
+    <string name="uvc_adjust">화질 조정</string>
+    <string name="uvc_brightness">밝기</string>
+    <string name="uvc_contrast">대비</string>
+    <string name="uvc_saturation">채도</string>
+    <string name="uvc_sharpness">선명도</string>
+    <string name="uvc_reset">초기화</string>
+    <string name="uvc_no_controls">이 카메라는 조정할 수 있는 항목이 없습니다.</string>
+    <string name="uvc_resolution">해상도</string>
+    <string name="btn_mirror">좌우 반전</string>
+    <string name="open_uv_camera">UV 카메라 열기</string>
+    <string name="btn_lens">렌즈 방향</string>
+    <string name="lens_set_screen">렌즈: 화면 쪽(셀카)</string>
+    <string name="lens_set_back">렌즈: 뒷면</string>
+    <string name="lens_auto_screen">렌즈 방향 자동 감지: 화면 쪽</string>
+    <string name="lens_auto_back">렌즈 방향 자동 감지: 뒷면</string>
+    <string name="opt_auto_lens">렌즈 방향 자동 감지 (연결 후 폰을 살짝 기울이면 판별)</string>
     <string name="max_fmt">▲ %1$s</string>
     <string name="min_fmt">▼ %1$s</string>
 </resources>

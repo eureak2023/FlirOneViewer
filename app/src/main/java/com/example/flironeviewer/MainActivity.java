@@ -65,12 +65,37 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
     private com.example.flironeviewer.ui.PaletteSwatchView btnPalette;
     private android.widget.LinearLayout paletteList;
     private final TextView[] modeViews = new TextView[ThermalView.Mode.values().length];
+    private View fullscreenControls;
+    private TextView btnScaleMode;
+    private boolean fullscreen;
+
+    // 렌즈 방향(뒷면/화면 쪽) 자동 감지: 연결될 때마다 자이로와 영상 움직임을 비교해 한 번 판별
+    private final com.example.flironeviewer.thermal.LensFacingDetector lensDetector =
+            new com.example.flironeviewer.thermal.LensFacingDetector();
+    private volatile boolean lensDetecting;
+    private boolean autoLens;
+    private long lensLogAt;
+    private android.hardware.SensorManager sensorManager;
+    private android.widget.ImageButton btnLens;
+    private final android.hardware.SensorEventListener gyroListener = new android.hardware.SensorEventListener() {
+        @Override
+        public void onSensorChanged(android.hardware.SensorEvent e) {
+            lensDetector.addGyro(e.timestamp, e.values[0], e.values[1]);
+        }
+
+        @Override
+        public void onAccuracyChanged(android.hardware.Sensor s, int accuracy) { }
+    };
+    /** Android 13+ 뒤로 가기 콜백 (OnBackInvokedCallback). 하위 버전에서 클래스를 참조하지 않도록 Object 로 보관. */
+    private Object backCallback;
 
     private long fpsWindowStart;
     private int fpsCount;
     private float fps;
     private volatile String lastStatusJson = "";
     private boolean permissionRequested;
+    /** 화면에 보일 때만 UV 카메라 화면으로 자동 전환. */
+    private boolean resumed;
 
     private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
         @Override
@@ -91,6 +116,10 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 if (FlirOneCamera.isFlirOne(device)) connectTo(device);
+                else if (resumed && com.example.flironeviewer.usb.UvcCamera.isUvc(device)) openUvCamera(device);
+            }
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action) || UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                updateUvButton();
             }
         }
     };
@@ -185,6 +214,38 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
             saveSnapshot();
         });
         chipEmissivity.setOnClickListener(v -> showEmissivityDialog());
+        // 전체 화면: 버튼으로 들어가고, 끝내기 버튼·두 번 탭·뒤로 가기로 나옵니다
+        fullscreenControls = findViewById(R.id.fullscreenControls);
+        findViewById(R.id.btnFullscreen).setOnClickListener(v -> setFullscreen(true));
+        findViewById(R.id.btnExitFullscreen).setOnClickListener(v -> setFullscreen(false));
+        // 전체 화면 표시 방식: 원본 비율 → 화면에 맞추기 → 채우기 순서로 전환 (기억됨)
+        btnScaleMode = findViewById(R.id.btnScaleMode);
+        try {
+            thermalView.setScaleMode(ThermalView.ScaleMode.valueOf(prefs.getString("scaleMode", "ORIGINAL")));
+        } catch (IllegalArgumentException ignored) {
+        }
+        updateScaleButton();
+        btnScaleMode.setOnClickListener(v -> {
+            ThermalView.ScaleMode[] all = ThermalView.ScaleMode.values();
+            ThermalView.ScaleMode next = all[(thermalView.getScaleMode().ordinal() + 1) % all.length];
+            thermalView.setScaleMode(next);
+            prefs.edit().putString("scaleMode", next.name()).apply();
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+            updateScaleButton();
+        });
+        thermalView.setOnDoubleTapListener(() -> setFullscreen(!fullscreen));
+        // 렌즈 방향: 버튼으로 바로 전환, 자동 감지는 설정에서 켜고 끔
+        sensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        autoLens = prefs.getBoolean("autoLens", true);
+        btnLens = findViewById(R.id.btnLens);
+        btnLens.setOnClickListener(v -> {
+            stopLensDetection(); // 직접 고르면 이번 연결에서는 자동 감지가 덮어쓰지 않음
+            boolean screen = !thermalView.isLensFacingScreen();
+            setLensFacing(screen);
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+            Toast.makeText(this, screen ? R.string.lens_set_screen : R.string.lens_set_back, Toast.LENGTH_SHORT).show();
+        });
+        updateLensButton();
         findViewById(R.id.chipStatus).setOnLongClickListener(v -> {
             new AlertDialog.Builder(this)
                     .setTitle(R.string.status_json_title)
@@ -227,7 +288,182 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
     @Override
     protected void onResume() {
         super.onResume();
+        resumed = true;
         if (camera == null) findAndConnect();
+        if (lensDetecting) {
+            lensDetector.reset(); // 멈춰 있던 동안의 자이로 공백이 섞이지 않게 처음부터
+            registerGyro();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        resumed = false;
+        sensorManager.unregisterListener(gyroListener);
+        super.onPause();
+    }
+
+    // ------------------------------------------------------------- 렌즈 방향
+
+    private void setLensFacing(boolean screen) {
+        thermalView.setLensFacingScreen(screen);
+        getSharedPreferences("viewer", MODE_PRIVATE).edit().putBoolean("lensFacingScreen", screen).apply();
+        updateLensButton();
+    }
+
+    /** 화면 쪽(셀카)이면 버튼을 강조색으로. */
+    private void updateLensButton() {
+        btnLens.setImageTintList(android.content.res.ColorStateList.valueOf(
+                getColor(thermalView.isLensFacingScreen() ? R.color.accent : R.color.text_primary)));
+    }
+
+    private void startLensDetection() {
+        if (!autoLens || camera == null) return;
+        lensDetector.reset();
+        lensDetecting = true;
+        registerGyro();
+    }
+
+    private void registerGyro() {
+        android.hardware.Sensor g = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_GYROSCOPE);
+        if (g == null) {
+            lensDetecting = false; // 자이로가 없는 기기: 버튼으로만 전환
+            return;
+        }
+        sensorManager.registerListener(gyroListener, g, android.hardware.SensorManager.SENSOR_DELAY_GAME);
+    }
+
+    private void stopLensDetection() {
+        lensDetecting = false;
+        sensorManager.unregisterListener(gyroListener);
+    }
+
+    /** 렌더 스레드: 방금 그린 프레임을 감지기에 넣습니다. 실화상이 있으면 무늬가 많은 실화상 휘도를 씁니다. */
+    private void feedLensDetector(FrameRenderer.RenderedFrame rf, long tNs) {
+        com.example.flironeviewer.protocol.ThermalImage img = rf.image;
+        int w = img.width, h = img.height;
+        float[] lum;
+        Bitmap vis = rf.visual;
+        if (vis != null) {
+            Bitmap s = Bitmap.createScaledBitmap(vis, w, h, true);
+            int[] px = new int[w * h];
+            s.getPixels(px, 0, w, 0, 0, w, h);
+            if (s != vis) s.recycle();
+            lum = com.example.flironeviewer.thermal.Enhance.luma(px);
+        } else {
+            lum = new float[w * h];
+            for (int i = 0; i < lum.length; i++) lum[i] = img.raw[i];
+        }
+        int d = lensDetector.addFrame(tNs, lum, w, h, thermalView.getNaturalRotation());
+        long now = SystemClock.elapsedRealtime();
+        if (now - lensLogAt > 1000) {
+            lensLogAt = now;
+            android.util.Log.d("FlirOneCamera", "렌즈 방향 감지 중 " + lensDetector.debugString());
+        }
+        if (d != com.example.flironeviewer.thermal.LensFacingDetector.UNKNOWN) ui.post(() -> onLensDetected(d));
+    }
+
+    private void onLensDetected(int d) {
+        if (!lensDetecting) return;
+        stopLensDetection();
+        boolean screen = d == com.example.flironeviewer.thermal.LensFacingDetector.SCREEN;
+        android.util.Log.i("FlirOneCamera", "렌즈 방향 자동 감지: " + (screen ? "화면 쪽" : "뒷면")
+                + " (" + lensDetector.debugString() + ")");
+        if (screen != thermalView.isLensFacingScreen()) {
+            setLensFacing(screen);
+            Toast.makeText(this, screen ? R.string.lens_auto_screen : R.string.lens_auto_back, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // ------------------------------------------------------------- 전체 화면
+
+    /** 상태바·내비게이션 바와 위아래 조작 UI를 숨기고 영상을 화면 최대 크기로 표시합니다. */
+    private void setFullscreen(boolean on) {
+        if (fullscreen == on) return;
+        fullscreen = on;
+        if (on) togglePalettePanel(false);
+        fade(topBar, !on);
+        fade(bottomBar, !on);
+        fade(fullscreenControls, on);
+        thermalView.setFullscreen(on);
+        applySystemBars();
+        updateBackCallback();
+        thermalView.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+        if (on) Toast.makeText(this, R.string.fullscreen_hint, Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateScaleButton() {
+        int text, icon;
+        switch (thermalView.getScaleMode()) {
+            case STRETCH: text = R.string.scale_stretch; icon = R.drawable.ic_scale_stretch; break;
+            case FILL: text = R.string.scale_fill; icon = R.drawable.ic_scale_fill; break;
+            default: text = R.string.scale_original; icon = R.drawable.ic_scale_original; break;
+        }
+        btnScaleMode.setText(text);
+        btnScaleMode.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+    }
+
+    private static void fade(final View v, final boolean show) {
+        v.animate().cancel();
+        if (show) {
+            v.setVisibility(View.VISIBLE);
+            v.animate().alpha(1f).setDuration(180).withEndAction(null).start();
+        } else {
+            v.animate().alpha(0f).setDuration(180).withEndAction(() -> v.setVisibility(View.INVISIBLE)).start();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void applySystemBars() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            android.view.WindowInsetsController c = getWindow().getInsetsController();
+            if (c == null) return;
+            if (fullscreen) {
+                c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                c.hide(android.view.WindowInsets.Type.systemBars());
+            } else {
+                c.show(android.view.WindowInsets.Type.systemBars());
+            }
+        } else {
+            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+            if (fullscreen) {
+                flags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+            }
+            findViewById(R.id.root).setSystemUiVisibility(flags);
+        }
+    }
+
+    /** 전체 화면일 때만 뒤로 가기를 가로채 전체 화면을 끝냅니다 (Android 13+). */
+    private void updateBackCallback() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        android.window.OnBackInvokedDispatcher d = getOnBackInvokedDispatcher();
+        if (fullscreen && backCallback == null) {
+            android.window.OnBackInvokedCallback cb = () -> setFullscreen(false);
+            d.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb);
+            backCallback = cb;
+        } else if (!fullscreen && backCallback != null) {
+            d.unregisterOnBackInvokedCallback((android.window.OnBackInvokedCallback) backCallback);
+            backCallback = null;
+        }
+    }
+
+    /** Android 10~12 의 뒤로 가기 키. 13+ 에서는 {@link #updateBackCallback()} 의 콜백이 처리합니다. */
+    @Override
+    public boolean onKeyDown(int keyCode, android.view.KeyEvent event) {
+        if (Build.VERSION.SDK_INT < 33 && keyCode == android.view.KeyEvent.KEYCODE_BACK && fullscreen) {
+            setFullscreen(false);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // 대화상자가 닫힌 뒤 등 시스템 바가 다시 나타난 경우 숨김 상태 복원
+        if (hasFocus && fullscreen) applySystemBars();
     }
 
     /** 세로 ↔ 거꾸로 세로(180°)는 화면 크기가 같아 구성 변경 이벤트가 오지 않으므로 디스플레이 회전을 직접 감지합니다. */
@@ -257,7 +493,27 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         }
     }
 
+    /** UV 카메라(UVC) 화면 열기. */
+    private void openUvCamera(UsbDevice device) {
+        Intent i = new Intent(this, UvcActivity.class);
+        if (device != null) i.putExtra(UsbManager.EXTRA_DEVICE, device);
+        startActivity(i);
+    }
+
+    /** UV 카메라가 꽂혀 있으면 안내 화면에 "UV 카메라 열기" 버튼 표시. */
+    private void updateUvButton() {
+        UsbDevice uv = null;
+        for (UsbDevice d : usbManager.getDeviceList().values()) {
+            if (com.example.flironeviewer.usb.UvcCamera.isUvc(d)) { uv = d; break; }
+        }
+        final UsbDevice dev = uv;
+        View b = findViewById(R.id.btnOpenUv);
+        b.setVisibility(dev != null ? View.VISIBLE : View.GONE);
+        b.setOnClickListener(v -> openUvCamera(dev));
+    }
+
     private void findAndConnect() {
+        updateUvButton();
         for (UsbDevice d : usbManager.getDeviceList().values()) {
             if (FlirOneCamera.isFlirOne(d)) {
                 connectTo(d);
@@ -291,6 +547,7 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
             fpsWindowStart = SystemClock.elapsedRealtime();
             fpsCount = 0;
             setStatus(getString(R.string.status_waiting_frames));
+            startLensDetection();
         } catch (Exception e) {
             setStatus(getString(R.string.status_connect_failed, e.getMessage()));
         }
@@ -299,6 +556,7 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
     private void closeCamera() {
         FlirOneCamera cam = camera;
         camera = null;
+        stopLensDetection();
         if (cam != null) new Thread(cam::stop, "FlirOne-close").start();
     }
 
@@ -330,12 +588,14 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         }
         if (!rendering.compareAndSet(false, true)) return; // 렌더링이 밀리면 프레임 드롭
         final ThermalView.Mode mode = thermalView.getMode();
+        final long arrivedNs = SystemClock.elapsedRealtimeNanos(); // 자이로와 같은 시간축
         worker.execute(() -> {
             try {
                 FrameRenderer.RenderedFrame rf = renderer.render(frame, mode);
                 if (rf != null) {
                     thermalView.setFrame(rf);
                     ui.post(() -> onRendered(rf));
+                    if (lensDetecting) feedLensDetector(rf, arrivedNs);
                 }
             } catch (Exception ignored) {
                 // 손상된 프레임은 건너뜀
@@ -401,6 +661,7 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
     public void onStopped(String reason) {
         ui.post(() -> {
             camera = null;
+            stopLensDetection();
             thermalView.setFrame(null);
             setStatus(getString(R.string.status_disconnected) + (reason != null ? " (" + reason + ")" : ""));
         });
@@ -553,6 +814,14 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
             }
             topBar.setPadding(pad + l, padTop + t, pad + r, 0);
             bottomBar.setPadding(pad + l, 0, pad + r, pad + b);
+            // 전체 화면 끝내기 버튼은 카메라 홀(컷아웃)을 피해 오른쪽 위에
+            View exit = findViewById(R.id.fullscreenControls);
+            android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) exit.getLayoutParams();
+            if (lp.topMargin != pad + t || lp.rightMargin != pad + r) {
+                lp.topMargin = pad + t;
+                lp.rightMargin = pad + r;
+                exit.setLayoutParams(lp);
+            }
             return insets;
         });
     }
@@ -629,9 +898,13 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
         enhanceBox.setChecked(renderer.isEnhance());
         enhanceBox.setOnCheckedChangeListener((b, c) -> renderer.setEnhance(c));
         final android.widget.CheckBox lensBox = new android.widget.CheckBox(this);
-        lensBox.setText(R.string.opt_lens_front);
-        lensBox.setChecked(thermalView.isLensFacingScreen());
-        lensBox.setOnCheckedChangeListener((b, c) -> thermalView.setLensFacingScreen(c));
+        lensBox.setText(R.string.opt_auto_lens);
+        lensBox.setChecked(autoLens);
+        lensBox.setOnCheckedChangeListener((b, c) -> {
+            autoLens = c;
+            prefs.edit().putBoolean("autoLens", c).apply();
+            if (c) startLensDetection(); else stopLensDetection();
+        });
         box.addView(denoiseBox);
         box.addView(enhanceBox);
         box.addView(lensBox);
@@ -645,7 +918,6 @@ public class MainActivity extends Activity implements FlirOneCamera.Callback {
                 .setPositiveButton(R.string.ok, (d, w) -> prefs.edit()
                         .putBoolean("denoise", renderer.isDenoise())
                         .putBoolean("enhance", renderer.isEnhance())
-                        .putBoolean("lensFacingScreen", thermalView.isLensFacingScreen())
                         .putFloat("msxStrength", renderer.getMsxStrength())
                         .putFloat("fusionDistance", (float) renderer.getFusion().distanceM)
                         .apply())

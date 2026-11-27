@@ -25,7 +25,6 @@
     <string name="snapshot_failed">Save failed: %1$s</string>
     <string name="msx_title">Image quality &amp; MSX settings</string>
     <string name="opt_denoise">Temporal noise reduction</string>
-    <string name="opt_lens_front">Lens faces the screen side (selfie)</string>
     <string name="opt_enhance">Enhance resolution (visual-guided)</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
@@ -45,6 +44,38 @@ Turn the camera on before plugging it in.</string>
     <string name="emissivity_chip_default">ε 0.95</string>
     <string name="battery_unknown" formatted="false">--%</string>
     <string name="btn_settings">Settings</string>
+    <string name="btn_fullscreen">Full screen</string>
+    <string name="btn_exit_fullscreen">Exit full screen</string>
+    <string name="fullscreen_hint">Double-tap the image or press Back to exit full screen</string>
+    <string name="btn_scale">Display size</string>
+    <string name="scale_original">Original ratio</string>
+    <string name="scale_stretch">Fit to screen</string>
+    <string name="scale_fill">Fill</string>
+    <string name="uvc_title">UV camera</string>
+    <string name="uvc_waiting">Connect the UV camera</string>
+    <string name="uvc_waiting_detail">Standard USB (UVC) cameras such as uvlook mini are supported.</string>
+    <string name="uvc_connecting">Connecting…</string>
+    <string name="uvc_permission">Allow USB access to the camera</string>
+    <string name="uvc_camera_permission">Allow camera permission to use the UV camera</string>
+    <string name="uvc_status">%1$d×%2$d · %3$.1f fps</string>
+    <string name="uvc_error">Camera error: %1$s</string>
+    <string name="uvc_disconnected">UV camera disconnected</string>
+    <string name="uvc_adjust">Image adjustments</string>
+    <string name="uvc_brightness">Brightness</string>
+    <string name="uvc_contrast">Contrast</string>
+    <string name="uvc_saturation">Saturation</string>
+    <string name="uvc_sharpness">Sharpness</string>
+    <string name="uvc_reset">Reset</string>
+    <string name="uvc_no_controls">This camera has no adjustable settings.</string>
+    <string name="uvc_resolution">Resolution</string>
+    <string name="btn_mirror">Mirror</string>
+    <string name="open_uv_camera">Open UV camera</string>
+    <string name="btn_lens">Lens direction</string>
+    <string name="lens_set_screen">Lens: facing the screen (selfie)</string>
+    <string name="lens_set_back">Lens: facing the back</string>
+    <string name="lens_auto_screen">Lens direction detected: facing the screen</string>
+    <string name="lens_auto_back">Lens direction detected: facing the back</string>
+    <string name="opt_auto_lens">Detect lens direction automatically (tilt the phone slightly after connecting)</string>
     <string name="max_fmt">▲ %1$s</string>
     <string name="min_fmt">▼ %1$s</string>
 </resources>
